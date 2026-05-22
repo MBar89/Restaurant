@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Palate — restaurants people like you love</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,700;1,9..144,300;1,9..144,500&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --ink: #1A1714; --ink-soft: #5A534E; --ink-faint: #9A928A;
+  --cream: #F7F3EE; --cream-dark: #EDE8E1; --cream-darker: #DDD6CC;
+  --plum: #3D2B4F; --plum-mid: #5C4278; --plum-light: #8B6FAD; --plum-pale: #E8E0F5;
+  --gold: #C8882A; --gold-pale: #FAF0DC;
+  --green: #2A6B4F; --green-pale: #DCF0E6;
+  --red-pale: #F5E0DC; --red: #A03020;
+  --blue-pale: #DCE8F5; --blue: #2A4B6B;
+  --radius: 16px; --shadow: 0 4px 24px rgba(26,23,20,0.10); --shadow-lg: 0 8px 40px rgba(26,23,20,0.16);
+}
+html, body { width:100%; height:100%; margin:0; padding:0; font-family:'DM Sans',sans-serif; background:#2A2520; }
+
+/* PHONE WRAPPER */
+.phone-wrapper { display:flex; align-items:center; justify-content:center; width:100%; min-height:100vh; }
+
+/* PHONE — full screen on mobile, shell on desktop */
+.phone { width:100%; height:100vh; background:var(--cream); overflow:hidden; position:relative; display:flex; flex-direction:column; flex-shrink:0; }
+
+@media (min-width:500px) {
+  .phone-wrapper { padding:20px 0; }
+  .phone { width:390px; height:844px; border-radius:44px; box-shadow:0 0 0 12px #111,0 0 0 14px #333,var(--shadow-lg); }
+}
+.notch { width:126px; height:34px; background:#111; border-radius:0 0 20px 20px; margin:0 auto; flex-shrink:0; position:relative; z-index:10; display:none; }
+@media (min-width:500px) { .notch { display:block; } }
+
+/* SCREENS */
+.screen { position:absolute; top:0; left:0; right:0; bottom:0; display:flex; flex-direction:column; overflow:hidden; opacity:0; pointer-events:none; transition:opacity 0.28s ease; }
+.screen.active { opacity:1; pointer-events:all; }
+.scroll-area { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; overflow-x:hidden; }
+.scroll-area::-webkit-scrollbar { display:none; }
+
+/* STATUS */
+.status-bar { display:flex; justify-content:space-between; align-items:center; padding:8px 20px 4px; flex-shrink:0; }
+.status-time { font-size:13px; font-weight:500; color:var(--ink); }
+.status-icons { font-size:11px; color:var(--ink-soft); }
+.status-logo { font-family:'Fraunces',serif; font-size:16px; font-style:italic; color:var(--plum); }
+
+/* NAV */
+.nav-bar { display:flex; justify-content:space-around; padding:10px 0 20px; background:var(--cream); border-top:1px solid var(--cream-darker); flex-shrink:0; }
+.nav-item { display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer; padding:4px 16px; border-radius:12px; transition:background 0.15s; }
+.nav-item:hover { background:var(--cream-dark); }
+.nav-item svg { width:22px; height:22px; stroke:var(--ink-faint); fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; transition:stroke 0.15s; }
+.nav-label { font-size:10px; color:var(--ink-faint); letter-spacing:0.02em; transition:color 0.15s; }
+.nav-item.active .nav-label { color:var(--plum); }
+.nav-item.active svg { stroke:var(--plum); }
+
+/* COMMON */
+h1,h2 { font-family:'Fraunces',serif; font-weight:500; }
+.section-label { font-size:11px; font-weight:500; color:var(--ink-faint); letter-spacing:0.08em; text-transform:uppercase; padding:16px 20px 6px; }
+.divider { height:1px; background:var(--cream-dark); margin:0 20px; }
+.match-pill { font-size:12px; font-weight:500; padding:4px 10px; border-radius:20px; background:var(--plum-pale); color:var(--plum); flex-shrink:0; }
+.match-bar { height:3px; background:var(--cream-darker); border-radius:2px; overflow:hidden; margin:5px 0; }
+.match-fill { height:100%; background:linear-gradient(90deg,var(--plum-light),var(--plum)); border-radius:2px; transition:width 0.6s ease; }
+.avatar { border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:500; flex-shrink:0; }
+.tag { display:inline-block; font-size:12px; padding:5px 11px; border-radius:20px; border:1.5px solid var(--cream-darker); color:var(--ink-soft); margin:3px; cursor:pointer; transition:all 0.15s; background:var(--cream); user-select:none; }
+.tag.active { background:var(--plum-pale); border-color:var(--plum-light); color:var(--plum); font-weight:500; }
+.tag:hover:not(.active) { border-color:var(--plum-light); }
+.btn-primary { background:var(--plum); color:var(--cream); border-radius:14px; padding:14px 28px; font-size:15px; font-weight:500; width:100%; border:none; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all 0.15s; letter-spacing:0.01em; display:flex; align-items:center; justify-content:center; gap:6px; }
+.btn-primary:hover { background:var(--plum-mid); transform:translateY(-1px); }
+.btn-primary:active { transform:translateY(0); }
+.back-btn { width:36px; height:36px; border-radius:50%; background:var(--cream-dark); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background 0.15s; flex-shrink:0; }
+.back-btn:hover { background:var(--cream-darker); }
+.back-btn svg { width:18px; height:18px; stroke:var(--ink); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+
+/* TOAST */
+.toast { position:absolute; bottom:100px; left:20px; right:20px; background:var(--ink); color:var(--cream); border-radius:12px; padding:12px 16px; font-size:13px; display:flex; align-items:center; gap:8px; opacity:0; transform:translateY(10px); transition:all 0.3s ease; z-index:200; pointer-events:none; }
+.toast.show { opacity:1; transform:translateY(0); }
+
+/* SPLASH */
+#screen-splash { background:var(--plum); top:0; justify-content:center; align-items:center; gap:10px; }
+.splash-logo { font-family:'Fraunces',serif; font-size:56px; font-weight:500; color:var(--cream); font-style:italic; letter-spacing:-1px; animation:fadeUp 0.6s ease both; }
+.splash-tagline { font-size:14px; color:rgba(247,243,238,0.55); letter-spacing:0.05em; animation:fadeUp 0.6s 0.1s ease both; }
+.splash-btn { margin-top:36px; background:var(--cream); color:var(--plum); border-radius:14px; padding:14px 52px; font-size:15px; font-weight:500; border:none; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all 0.15s; animation:fadeUp 0.6s 0.2s ease both; }
+.splash-btn:hover { transform:translateY(-2px); box-shadow:0 6px 24px rgba(0,0,0,0.25); }
+@keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+
+/* CALIBRATION */
+#screen-calibration { background:var(--cream); }
+.calib-header { padding:12px 20px 0; }
+.calib-header h1 { font-size:26px; color:var(--ink); line-height:1.2; margin-bottom:6px; }
+.calib-header p { font-size:14px; color:var(--ink-soft); line-height:1.5; }
+.progress-row { display:flex; gap:4px; padding:12px 20px; flex-shrink:0; }
+.progress-dot { height:3px; flex:1; background:var(--cream-darker); border-radius:2px; transition:background 0.3s; }
+.progress-dot.done { background:var(--plum); }
+.calib-card { margin:8px 20px; background:white; border-radius:var(--radius); padding:16px; box-shadow:0 2px 12px rgba(26,23,20,0.07); animation:fadeUp 0.3s ease both; }
+.calib-card .place-name { font-family:'Fraunces',serif; font-size:17px; font-weight:500; color:var(--ink); margin-bottom:2px; }
+.calib-card .place-meta { font-size:12px; color:var(--ink-faint); margin-bottom:12px; }
+.calib-options { display:flex; gap:6px; }
+.calib-option { flex:1; padding:8px 4px; border-radius:10px; border:1.5px solid var(--cream-darker); background:transparent; font-size:12px; font-family:'DM Sans',sans-serif; color:var(--ink-soft); cursor:pointer; transition:all 0.15s; text-align:center; }
+.calib-option:hover { border-color:var(--plum-light); color:var(--plum); }
+.calib-option.sel-love { background:var(--plum-pale); border-color:var(--plum); color:var(--plum); font-weight:500; }
+.calib-option.sel-mixed { background:var(--gold-pale); border-color:var(--gold); color:var(--gold); font-weight:500; }
+.calib-option.sel-never { background:var(--cream-dark); border-color:var(--cream-darker); color:var(--ink-faint); font-weight:500; }
+.calib-footer { padding:16px 20px 24px; flex-shrink:0; }
+
+/* HOME */
+#screen-home { background:var(--cream); }
+.home-header { padding:10px 20px 8px; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; }
+.home-header h2 { font-size:22px; color:var(--ink); font-style:italic; }
+.city-pill { font-size:13px; padding:5px 12px; background:var(--cream-dark); border-radius:20px; color:var(--ink-soft); cursor:pointer; display:flex; align-items:center; gap:4px; }
+.restaurant-card { margin:8px 20px; background:white; border-radius:var(--radius); padding:16px; box-shadow:0 2px 12px rgba(26,23,20,0.06); cursor:pointer; transition:all 0.2s; }
+.restaurant-card:hover { transform:translateY(-2px); box-shadow:var(--shadow); }
+.restaurant-card:active { transform:translateY(0); }
+.card-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; }
+.card-name { font-family:'Fraunces',serif; font-size:18px; font-weight:500; color:var(--ink); margin-bottom:2px; }
+.card-meta { font-size:12px; color:var(--ink-faint); }
+.card-social { display:flex; align-items:center; gap:6px; margin-top:10px; }
+.card-social-text { font-size:12px; color:var(--ink-soft); }
+.friend-card { margin:8px 20px; background:white; border-radius:var(--radius); padding:14px 16px; box-shadow:0 2px 12px rgba(26,23,20,0.06); cursor:pointer; transition:all 0.2s; }
+.friend-card:hover { transform:translateY(-1px); box-shadow:var(--shadow); }
+.friend-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.friend-name { font-size:13px; color:var(--ink-soft); }
+.friend-name strong { color:var(--ink); }
+
+/* DETAIL */
+#screen-detail { background:var(--cream); }
+.detail-header { display:flex; align-items:center; justify-content:space-between; padding:10px 20px; flex-shrink:0; }
+.save-btn { width:36px; height:36px; border-radius:50%; background:var(--cream-dark); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.15s; }
+.save-btn svg { width:18px; height:18px; fill:none; stroke:var(--ink); stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; transition:all 0.2s; }
+.save-btn.saved svg { fill:var(--plum); stroke:var(--plum); }
+.detail-hero { margin:0 20px 16px; background:linear-gradient(135deg,var(--plum) 0%,#6B4E8A 100%); border-radius:var(--radius); padding:24px; color:var(--cream); position:relative; overflow:hidden; }
+.detail-hero::before { content:''; position:absolute; top:-20px; right:-20px; width:120px; height:120px; border-radius:50%; background:rgba(255,255,255,0.07); }
+.detail-hero::after { content:''; position:absolute; bottom:-30px; left:-10px; width:80px; height:80px; border-radius:50%; background:rgba(255,255,255,0.04); }
+.detail-hero-name { font-family:'Fraunces',serif; font-size:28px; font-weight:500; font-style:italic; margin-bottom:4px; }
+.detail-hero-meta { font-size:13px; opacity:0.7; margin-bottom:16px; }
+.detail-hero-match { display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.15); border-radius:20px; padding:6px 14px; font-size:14px; font-weight:500; }
+.detail-section { padding:0 20px 16px; }
+.detail-section-title { font-size:11px; font-weight:500; color:var(--ink-faint); letter-spacing:0.08em; text-transform:uppercase; margin-bottom:10px; }
+.reviewer-row { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.reviewer-info { flex:1; }
+.reviewer-name { font-size:13px; font-weight:500; color:var(--ink); }
+.reviewer-overlap { font-size:12px; color:var(--plum-light); }
+.binary-row { display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--cream-dark); }
+.binary-row:last-child { border-bottom:none; }
+.binary-q { font-size:14px; color:var(--ink); }
+.binary-opts { display:flex; gap:6px; }
+.binary-opt { padding:6px 14px; border-radius:8px; border:1.5px solid var(--cream-darker); font-size:13px; font-family:'DM Sans',sans-serif; cursor:pointer; background:transparent; color:var(--ink-soft); transition:all 0.15s; }
+.binary-opt.sel-yes { background:var(--green-pale); border-color:var(--green); color:var(--green); font-weight:500; }
+.binary-opt.sel-no { background:var(--red-pale); border-color:var(--red); color:var(--red); font-weight:500; }
+.binary-opt.sel-local { background:var(--plum-pale); border-color:var(--plum-light); color:var(--plum); font-weight:500; }
+
+/* EXPLORE */
+#screen-explore { background:var(--cream); }
+.search-bar-wrap { padding:8px 20px 12px; flex-shrink:0; }
+.search-bar { display:flex; align-items:center; gap:10px; background:white; border-radius:12px; padding:10px 14px; box-shadow:0 2px 12px rgba(26,23,20,0.06); }
+.search-bar svg { width:18px; height:18px; stroke:var(--ink-faint); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; }
+.search-input { flex:1; border:none; background:transparent; outline:none; font-size:14px; font-family:'DM Sans',sans-serif; color:var(--ink); }
+.search-input::placeholder { color:var(--ink-faint); }
+.filter-row { display:flex; gap:8px; padding:0 20px 12px; overflow-x:auto; flex-shrink:0; scrollbar-width:none; }
+.filter-row::-webkit-scrollbar { display:none; }
+.filter-chip { white-space:nowrap; font-size:12px; padding:6px 14px; border-radius:20px; border:1.5px solid var(--cream-darker); color:var(--ink-soft); background:var(--cream); cursor:pointer; transition:all 0.15s; flex-shrink:0; }
+.filter-chip.active { background:var(--plum-pale); border-color:var(--plum-light); color:var(--plum); font-weight:500; }
+
+/* ADD */
+#screen-add { background:var(--cream); }
+.add-header { display:flex; align-items:center; gap:12px; padding:10px 20px; flex-shrink:0; }
+.add-header h2 { font-size:18px; color:var(--ink); font-style:italic; }
+.form-group { padding:0 20px 16px; }
+.form-label { font-size:11px; font-weight:500; color:var(--ink-faint); letter-spacing:0.06em; text-transform:uppercase; margin-bottom:6px; display:block; }
+.form-input { width:100%; padding:12px 14px; border-radius:12px; border:1.5px solid var(--cream-darker); background:white; font-size:14px; font-family:'DM Sans',sans-serif; color:var(--ink); outline:none; transition:border-color 0.15s; }
+.form-input:focus { border-color:var(--plum-light); }
+.form-input::placeholder { color:var(--ink-faint); }
+.form-row { display:flex; gap:10px; padding:0 20px 16px; }
+.form-row .form-group { padding:0; flex:1; }
+.price-opts { display:flex; gap:6px; }
+.price-opt { flex:1; padding:10px 4px; border-radius:10px; border:1.5px solid var(--cream-darker); background:transparent; font-size:13px; font-family:'DM Sans',sans-serif; color:var(--ink-soft); cursor:pointer; transition:all 0.15s; text-align:center; }
+.price-opt.selected { background:var(--plum-pale); border-color:var(--plum-light); color:var(--plum); font-weight:500; }
+.suggest-row { background:white; border-radius:10px; padding:10px 14px; margin:0 20px 6px; cursor:pointer; transition:background 0.15s; border:1.5px solid transparent; }
+.suggest-row:hover { background:var(--cream-dark); border-color:var(--plum-pale); }
+.suggest-name { font-size:14px; font-weight:500; color:var(--ink); }
+.suggest-meta { font-size:12px; color:var(--ink-faint); }
+
+/* SAVED */
+#screen-saved { background:var(--cream); }
+.saved-header { padding:10px 20px 8px; flex-shrink:0; }
+.saved-header h2 { font-size:22px; color:var(--ink); font-style:italic; }
+.saved-card { margin:8px 20px; background:white; border-radius:var(--radius); padding:14px 16px; box-shadow:0 2px 12px rgba(26,23,20,0.06); cursor:pointer; transition:all 0.2s; display:flex; align-items:center; gap:12px; }
+.saved-card:hover { transform:translateY(-1px); box-shadow:var(--shadow); }
+.saved-icon { width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+.saved-info { flex:1; }
+.saved-name { font-family:'Fraunces',serif; font-size:16px; font-weight:500; color:var(--ink); margin-bottom:2px; }
+.saved-meta { font-size:12px; color:var(--ink-faint); }
+
+/* PROFILE */
+#screen-profile { background:var(--cream); }
+.profile-header { padding:12px 20px; flex-shrink:0; }
+.profile-header h2 { font-size:22px; font-style:italic; color:var(--ink); margin-bottom:2px; }
+.profile-header p { font-size:13px; color:var(--ink-faint); }
+.profile-card { margin:0 20px 16px; background:white; border-radius:var(--radius); padding:20px; box-shadow:0 2px 12px rgba(26,23,20,0.06); }
+.signal-row { margin-bottom:12px; }
+.signal-top { display:flex; justify-content:space-between; margin-bottom:4px; }
+.signal-name { font-size:13px; color:var(--ink-soft); }
+.signal-strength { font-size:12px; font-weight:500; }
+.signal-strength.strong { color:var(--plum); }
+.signal-strength.weak { color:var(--ink-faint); }
+.match-person { display:flex; align-items:center; gap:10px; padding:12px 0; border-bottom:1px solid var(--cream-dark); }
+.match-person:last-child { border-bottom:none; }
+.match-person-info { flex:1; }
+.match-person-name { font-size:14px; font-weight:500; color:var(--ink); margin-bottom:4px; }
+
+/* HOW IT WORKS OVERLAY */
+.overlay { position:absolute; top:34px; left:0; right:0; bottom:0; background:rgba(26,23,20,0.5); z-index:50; display:flex; align-items:flex-end; opacity:0; pointer-events:none; transition:opacity 0.25s; }
+.overlay.show { opacity:1; pointer-events:all; }
+.overlay-sheet { background:var(--cream); border-radius:24px 24px 0 0; padding:0 0 32px; width:100%; transform:translateY(40px); transition:transform 0.25s ease; }
+.overlay.show .overlay-sheet { transform:translateY(0); }
+.overlay-handle { width:36px; height:4px; border-radius:2px; background:var(--cream-darker); margin:12px auto 20px; }
+.overlay-title { font-family:'Fraunces',serif; font-size:20px; font-weight:500; color:var(--ink); padding:0 24px 16px; font-style:italic; }
+.how-step { display:flex; gap:14px; padding:12px 24px; border-bottom:1px solid var(--cream-dark); }
+.how-step:last-child { border-bottom:none; }
+.how-num { width:28px; height:28px; border-radius:50%; background:var(--plum-pale); color:var(--plum); font-size:12px; font-weight:500; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.how-text { flex:1; }
+.how-title { font-size:14px; font-weight:500; color:var(--ink); margin-bottom:2px; }
+.how-desc { font-size:13px; color:var(--ink-soft); line-height:1.4; }
+</style>
+</head>
+<body>
+<div class="phone-wrapper"><div class="phone">
+  <div class="notch"></div>
+
+  <!-- SPLASH -->
+  <div class="screen active" id="screen-splash">
+    <div class="splash-logo">palate</div>
+    <div class="splash-tagline">restaurants people like you love</div>
+    <button class="splash-btn" onclick="goTo('calibration')">Get started →</button>
+  </div>
+
+  <!-- CALIBRATION -->
+  <div class="screen" id="screen-calibration">
+    <div class="status-bar"><span class="status-time">9:41</span><span class="status-logo">palate</span><span class="status-icons">▲▲▲</span></div>
+    <div class="calib-header"><h1>Rate places<br>you know</h1><p>We'll find people with your taste and show you what they love.</p></div>
+    <div class="progress-row" id="progress-dots"></div>
+    <div class="scroll-area"><div id="calib-cards"></div><div style="height:16px;"></div></div>
+    <div class="calib-footer"><button class="btn-primary" onclick="finishCalibration()">See my matches →</button></div>
+  </div>
+
+  <!-- HOME -->
+  <div class="screen" id="screen-home">
+    <div class="status-bar"><span class="status-time">9:41</span><span class="status-logo">palate</span><span class="status-icons">▲▲▲</span></div>
+    <div class="home-header"><h2>For you</h2><div class="city-pill" onclick="showToast('City picker coming soon')">📍 London ▾</div></div>
+    <div class="scroll-area">
+      <div class="section-label">Your matches</div>
+      <div class="restaurant-card" onclick="openDetail('brat','home')">
+        <div class="card-top"><div><div class="card-name">Brat</div><div class="card-meta">Basque · Shoreditch · ££££</div></div><div class="match-pill">94% match</div></div>
+        <div class="match-bar"><div class="match-fill" style="width:94%"></div></div>
+        <div class="card-social">
+          <div class="avatar" style="width:26px;height:26px;font-size:10px;background:var(--green-pale);color:var(--green);">SR</div>
+          <div class="avatar" style="width:26px;height:26px;font-size:10px;background:var(--plum-pale);color:var(--plum);margin-left:-8px;">JK</div>
+          <span class="card-social-text">2 people like you loved this</span>
+        </div>
+      </div>
+      <div class="restaurant-card" onclick="openDetail('noble','home')">
+        <div class="card-top"><div><div class="card-name">Noble Rot</div><div class="card-meta">Wine bar · Soho · £££</div></div><div class="match-pill">89% match</div></div>
+        <div class="match-bar"><div class="match-fill" style="width:89%"></div></div>
+        <div style="margin-top:8px;"><span class="tag active">natural wine list</span><span class="tag active">atmosphere over food</span></div>
+      </div>
+      <div class="restaurant-card" onclick="openDetail('lyles','home')">
+        <div class="card-top"><div><div class="card-name">Lyle's</div><div class="card-meta">British · Shoreditch · £££</div></div><div class="match-pill">87% match</div></div>
+        <div class="match-bar"><div class="match-fill" style="width:87%"></div></div>
+        <div style="margin-top:8px;"><span class="tag active">neighbourhood gem</span><span class="tag active">worth the journey</span></div>
+      </div>
+      <div class="restaurant-card" onclick="openDetail('brawn','home')">
+        <div class="card-top"><div><div class="card-name">Brawn</div><div class="card-meta">European · Bethnal Green · £££</div></div><div class="match-pill">85% match</div></div>
+        <div class="match-bar"><div class="match-fill" style="width:85%"></div></div>
+        <div class="card-social">
+          <div class="avatar" style="width:26px;height:26px;font-size:10px;background:var(--gold-pale);color:var(--gold);">MT</div>
+          <span class="card-social-text">1 person like you loved this</span>
+        </div>
+      </div>
+      <div class="restaurant-card" onclick="openDetail('daterra','home')">
+        <div class="card-top"><div><div class="card-name">Da Terra</div><div class="card-meta">Italian · Bethnal Green · £££££</div></div><div class="match-pill">83% match</div></div>
+        <div class="match-bar"><div class="match-fill" style="width:83%"></div></div>
+        <div style="margin-top:8px;"><span class="tag active">special occasion</span><span class="tag active">book weeks ahead</span></div>
+      </div>
+      <div class="section-label">From friends</div>
+      <div class="friend-card" onclick="openDetail('somsaa','home')">
+        <div class="friend-row"><div class="avatar" style="width:30px;height:30px;font-size:11px;background:var(--red-pale);color:var(--red);">AT</div><span class="friend-name">Alice tagged <strong>Som Saa</strong></span></div>
+        <div><span class="tag active">order the larb</span><span class="tag active">locals only</span><span class="tag active">worth the journey</span></div>
+      </div>
+      <div class="friend-card" onclick="openDetail('rochelle','home')">
+        <div class="friend-row"><div class="avatar" style="width:30px;height:30px;font-size:11px;background:var(--blue-pale);color:var(--blue);">BN</div><span class="friend-name">Ben saved <strong>Rochelle Canteen</strong></span></div>
+        <div><span class="tag active">neighbourhood gem</span><span class="tag active">worth the journey</span></div>
+      </div>
+      <div style="padding:16px 20px;">
+        <button class="btn-primary" style="background:var(--cream-dark);color:var(--ink);" onclick="goTo('add')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add a restaurant
+        </button>
+      </div>
+      <div style="height:8px;"></div>
+    </div>
+    <div class="nav-bar">
+      <div class="nav-item active" onclick="goTo('home')"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span class="nav-label">Home</span></div>
+      <div class="nav-item" onclick="goTo('explore')"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span class="nav-label">Explore</span></div>
+      <div class="nav-item" onclick="goTo('saved')"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg><span class="nav-label">Saved</span></div>
+      <div class="nav-item" onclick="goTo('profile')"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="nav-label">Profile</span></div>
+    </div>
+  </div>
+
+  <!-- DETAIL -->
+  <div class="screen" id="screen-detail">
+    <div class="status-bar"><span class="status-time">9:41</span><span></span><span class="status-icons">▲▲▲</span></div>
+    <div class="detail-header">
+      <button class="back-btn" id="detail-back-btn"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <button class="save-btn" id="save-btn" onclick="toggleSave()"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></button>
+    </div>
+    <div class="scroll-area">
+      <div class="detail-hero">
+        <div class="detail-hero-name" id="detail-name">Brat</div>
+        <div class="detail-hero-meta" id="detail-meta">Basque · Shoreditch · ££££</div>
+        <div class="detail-hero-match" id="detail-match">✦ 94% match for you</div>
+      </div>
+      <div class="detail-section">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <div class="detail-section-title" style="margin:0;">What people like you say</div>
+          <button onclick="showHowItWorks()" style="font-size:12px;color:var(--plum-light);background:none;border:none;cursor:pointer;padding:0;">How does this work?</button>
+        </div>
+        <div id="detail-tags"></div>
+      </div>
+      <div class="divider"></div>
+      <div class="detail-section" style="padding-top:16px;">
+        <div class="detail-section-title">Taste-matched reviewers</div>
+        <div class="reviewer-row">
+          <div class="avatar" style="width:32px;height:32px;font-size:11px;background:var(--green-pale);color:var(--green);">SR</div>
+          <div class="reviewer-info"><div class="reviewer-name">Sarah R.</div><div class="reviewer-overlap">91% taste overlap with you</div></div>
+          <div class="match-pill">loved it</div>
+        </div>
+        <div class="reviewer-row">
+          <div class="avatar" style="width:32px;height:32px;font-size:11px;background:var(--plum-pale);color:var(--plum);">JK</div>
+          <div class="reviewer-info"><div class="reviewer-name">James K.</div><div class="reviewer-overlap">84% taste overlap with you</div></div>
+          <div class="match-pill">loved it</div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="detail-section" style="padding-top:16px;">
+        <div class="detail-section-title">Leave your tags</div>
+        <div id="review-tags-area"></div>
+      </div>
+      <div class="divider"></div>
+      <div class="detail-section" style="padding-top:16px;">
+        <div class="detail-section-title">Quick questions</div>
+        <div class="binary-row"><span class="binary-q">Worth the price?</span><div class="binary-opts"><button class="binary-opt" onclick="selectBinary(this,'yes','price')">Yes</button><button class="binary-opt" onclick="selectBinary(this,'no','price')">No</button></div></div>
+        <div class="binary-row"><span class="binary-q">Bring a visitor?</span><div class="binary-opts"><button class="binary-opt" onclick="selectBinary(this,'yes','visitor')">Yes</button><button class="binary-opt" onclick="selectBinary(this,'local','visitor')">Locals only</button></div></div>
+        <div class="binary-row"><span class="binary-q">Better than expected?</span><div class="binary-opts"><button class="binary-opt" onclick="selectBinary(this,'yes','expect')">Yes</button><button class="binary-opt" onclick="selectBinary(this,'no','expect')">No</button></div></div>
+      </div>
+      <div style="padding:0 20px 32px;"><button class="btn-primary" onclick="submitReview()">Save review →</button></div>
+    </div>
+  </div>
+
+  <!-- EXPLORE -->
+  <div class="screen" id="screen-explore">
+    <div class="status-bar"><span class="status-time">9:41</span><span class="status-logo">palate</span><span class="status-icons">▲▲▲</span></div>
+    <div class="search-bar-wrap">
+      <div class="search-bar">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input class="search-input" id="explore-input" placeholder="Search restaurants, tags, cuisines…" oninput="filterExplore(this.value)">
+      </div>
+    </div>
+    <div class="filter-row">
+      <div class="filter-chip active" onclick="setFilter(this,'all')">All</div>
+      <div class="filter-chip" onclick="setFilter(this,'independent')">Independents</div>
+      <div class="filter-chip" onclick="setFilter(this,'special')">Special occasion</div>
+      <div class="filter-chip" onclick="setFilter(this,'neighbourhood')">Neighbourhood</div>
+      <div class="filter-chip" onclick="setFilter(this,'wine')">Natural wine</div>
+    </div>
+    <div class="scroll-area" id="explore-results"></div>
+    <div class="nav-bar">
+      <div class="nav-item" onclick="goTo('home')"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span class="nav-label">Home</span></div>
+      <div class="nav-item active" onclick="goTo('explore')"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span class="nav-label">Explore</span></div>
+      <div class="nav-item" onclick="goTo('saved')"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg><span class="nav-label">Saved</span></div>
+      <div class="nav-item" onclick="goTo('profile')"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="nav-label">Profile</span></div>
+    </div>
+  </div>
+
+  <!-- ADD RESTAURANT -->
+  <div class="screen" id="screen-add">
+    <div class="status-bar"><span class="status-time">9:41</span><span></span><span class="status-icons">▲▲▲</span></div>
+    <div class="add-header"><button class="back-btn" onclick="goTo('home')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button><h2>Add a restaurant</h2></div>
+    <div class="scroll-area">
+      <div class="form-group"><label class="form-label">Restaurant name</label><input class="form-input" id="add-name" placeholder="e.g. The Clove Club" oninput="handleAddSearch(this.value)"></div>
+      <div id="add-suggestions" style="display:none;margin-bottom:8px;"></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Cuisine</label><input class="form-input" id="add-cuisine" placeholder="e.g. British"></div>
+        <div class="form-group"><label class="form-label">Neighbourhood</label><input class="form-input" id="add-area" placeholder="e.g. Shoreditch"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Price range</label><div class="price-opts"><button class="price-opt" onclick="selectPrice(this,'£')">£</button><button class="price-opt" onclick="selectPrice(this,'££')">££</button><button class="price-opt" onclick="selectPrice(this,'£££')">£££</button><button class="price-opt" onclick="selectPrice(this,'££££')">££££</button></div></div>
+      <div class="form-group">
+        <label class="form-label">Your tags for this place</label>
+        <div id="add-tags-area">
+          <span class="tag" onclick="this.classList.toggle('active')">worth the journey</span>
+          <span class="tag" onclick="this.classList.toggle('active')">neighbourhood gem</span>
+          <span class="tag" onclick="this.classList.toggle('active')">locals only</span>
+          <span class="tag" onclick="this.classList.toggle('active')">tourist trap</span>
+          <span class="tag" onclick="this.classList.toggle('active')">atmosphere over food</span>
+          <span class="tag" onclick="this.classList.toggle('active')">special occasion</span>
+          <span class="tag" onclick="this.classList.toggle('active')">good for dates</span>
+          <span class="tag" onclick="this.classList.toggle('active')">good for groups</span>
+          <span class="tag" onclick="this.classList.toggle('active')">book weeks ahead</span>
+          <span class="tag" onclick="this.classList.toggle('active')">walk-ins welcome</span>
+          <span class="tag" onclick="this.classList.toggle('active')">natural wine list</span>
+          <span class="tag" onclick="this.classList.toggle('active')">skip the desserts</span>
+          <span class="tag" onclick="this.classList.toggle('active')">order the tasting menu</span>
+          <span class="tag" onclick="this.classList.toggle('active')">great for solo dining</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Quick questions</label>
+        <div style="background:white;border-radius:12px;padding:4px 0;box-shadow:0 2px 12px rgba(26,23,20,0.06);">
+          <div class="binary-row" style="padding:12px 14px;"><span class="binary-q">Worth the price?</span><div class="binary-opts"><button class="binary-opt" onclick="selectBinary(this,'yes','add-price')">Yes</button><button class="binary-opt" onclick="selectBinary(this,'no','add-price')">No</button></div></div>
+          <div class="binary-row" style="padding:12px 14px;"><span class="binary-q">Bring a visitor?</span><div class="binary-opts"><button class="binary-opt" onclick="selectBinary(this,'yes','add-visitor')">Yes</button><button class="binary-opt" onclick="selectBinary(this,'local','add-visitor')">Locals only</button></div></div>
+        </div>
+      </div>
+      <div style="padding:0 20px 32px;"><button class="btn-primary" onclick="submitNewRestaurant()">Add to palate →</button></div>
+    </div>
+  </div>
+
+  <!-- SAVED -->
+  <div class="screen" id="screen-saved">
+    <div class="status-bar"><span class="status-time">9:41</span><span class="status-logo">palate</span><span class="status-icons">▲▲▲</span></div>
+    <div class="saved-header"><h2>Saved</h2></div>
+    <div class="scroll-area"><div class="section-label">Your list</div><div id="saved-list"></div><div style="height:20px;"></div></div>
+    <div class="nav-bar">
+      <div class="nav-item" onclick="goTo('home')"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span class="nav-label">Home</span></div>
+      <div class="nav-item" onclick="goTo('explore')"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span class="nav-label">Explore</span></div>
+      <div class="nav-item active" onclick="goTo('saved')"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg><span class="nav-label">Saved</span></div>
+      <div class="nav-item" onclick="goTo('profile')"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="nav-label">Profile</span></div>
+    </div>
+  </div>
+
+  <!-- PROFILE -->
+  <div class="screen" id="screen-profile">
+    <div class="status-bar"><span class="status-time">9:41</span><span class="status-logo">palate</span><span class="status-icons">▲▲▲</span></div>
+    <div class="profile-header"><h2>Your palate</h2><p id="profile-subtitle">Built from 42 places reviewed</p></div>
+    <div class="scroll-area">
+      <div class="section-label">Your taste signals</div>
+      <div class="profile-card">
+        <div class="signal-row"><div class="signal-top"><span class="signal-name">Atmosphere over food</span><span class="signal-strength strong">strong</span></div><div class="match-bar"><div class="match-fill" style="width:85%"></div></div></div>
+        <div class="signal-row"><div class="signal-top"><span class="signal-name">Worth the journey</span><span class="signal-strength strong">strong</span></div><div class="match-bar"><div class="match-fill" style="width:78%"></div></div></div>
+        <div class="signal-row"><div class="signal-top"><span class="signal-name">Prefers independents</span><span class="signal-strength strong">strong</span></div><div class="match-bar"><div class="match-fill" style="width:92%"></div></div></div>
+        <div class="signal-row"><div class="signal-top"><span class="signal-name">Chain tolerance</span><span class="signal-strength weak">low</span></div><div class="match-bar"><div class="match-fill" style="width:10%;background:var(--cream-darker)"></div></div></div>
+        <div class="signal-row" style="margin-bottom:0;"><div class="signal-top"><span class="signal-name">Price sensitivity</span><span class="signal-strength weak">low</span></div><div class="match-bar"><div class="match-fill" style="width:18%;background:var(--cream-darker)"></div></div></div>
+      </div>
+      <div class="section-label">People like you</div>
+      <div class="profile-card">
+        <div class="match-person"><div class="avatar" style="width:36px;height:36px;font-size:13px;background:var(--green-pale);color:var(--green);">SR</div><div class="match-person-info"><div class="match-person-name">Sarah R.</div><div class="match-bar" style="margin:0;"><div class="match-fill" style="width:91%"></div></div></div><span class="match-pill">91%</span></div>
+        <div class="match-person"><div class="avatar" style="width:36px;height:36px;font-size:13px;background:var(--plum-pale);color:var(--plum);">JK</div><div class="match-person-info"><div class="match-person-name">James K.</div><div class="match-bar" style="margin:0;"><div class="match-fill" style="width:84%"></div></div></div><span class="match-pill">84%</span></div>
+        <div class="match-person"><div class="avatar" style="width:36px;height:36px;font-size:13px;background:var(--gold-pale);color:var(--gold);">MT</div><div class="match-person-info"><div class="match-person-name">Maya T.</div><div class="match-bar" style="margin:0;"><div class="match-fill" style="width:79%"></div></div></div><span class="match-pill">79%</span></div>
+      </div>
+      <div class="section-label">Your top tags</div>
+      <div style="padding:0 20px 32px;">
+        <span class="tag active">worth the journey</span>
+        <span class="tag active">atmosphere over food</span>
+        <span class="tag active">locals only</span>
+        <span class="tag active">neighbourhood gem</span>
+        <span class="tag active">natural wine list</span>
+        <span class="tag active">skip the desserts</span>
+      </div>
+    </div>
+    <div class="nav-bar">
+      <div class="nav-item" onclick="goTo('home')"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span class="nav-label">Home</span></div>
+      <div class="nav-item" onclick="goTo('explore')"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span class="nav-label">Explore</span></div>
+      <div class="nav-item" onclick="goTo('saved')"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg><span class="nav-label">Saved</span></div>
+      <div class="nav-item active" onclick="goTo('profile')"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="nav-label">Profile</span></div>
+    </div>
+  </div>
+
+  <!-- HOW IT WORKS OVERLAY -->
+  <div class="overlay" id="how-overlay" onclick="hideHowItWorks(event)">
+    <div class="overlay-sheet">
+      <div class="overlay-handle"></div>
+      <div class="overlay-title">How match scores work</div>
+      <div class="how-step"><div class="how-num">1</div><div class="how-text"><div class="how-title">You rate places you know</div><div class="how-desc">Your calibration ratings place you in taste space — alongside everyone else who's used palate.</div></div></div>
+      <div class="how-step"><div class="how-num">2</div><div class="how-text"><div class="how-title">We find people like you</div><div class="how-desc">People who rated the same places similarly share a taste signature with you. The closer they are, the more their opinions count.</div></div></div>
+      <div class="how-step"><div class="how-num">3</div><div class="how-text"><div class="how-title">Their loves become your feed</div><div class="how-desc">A 94% match means people very close to you in taste space consistently loved this place — not a star average, a signal from your people.</div></div></div>
+      <div class="how-step"><div class="how-num">4</div><div class="how-text"><div class="how-title">Your reviews sharpen your matches</div><div class="how-desc">Every tag you leave makes your taste vector more precise and your matches more accurate over time.</div></div></div>
+      <div style="padding:20px 24px 0;"><button class="btn-primary" onclick="hideHowItWorks()">Got it</button></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"><span>✓</span><span id="toast-msg"></span></div>
+</div></div>
+
+<script>
+const calibPlaces = [
+  { name:'Dishoom', meta:'Indian · Shoreditch' },
+  { name:'Wagamama', meta:'Pan-Asian · Chain' },
+  { name:'Hawksmoor', meta:'Steakhouse · Various' },
+  { name:'Pret a Manger', meta:'Café · Chain' },
+  { name:'The Ledbury', meta:'Modern European · Notting Hill' },
+  { name:'Five Guys', meta:'Burgers · Chain' },
+  { name:'Ottolenghi', meta:'Mediterranean · Various' },
+  { name:'Nobu', meta:'Japanese · Mayfair' },
+];
+
+const restaurants = {
+  brat:     { name:'Brat',            meta:'Basque · Shoreditch · ££££',       match:94, emoji:'🔥', tags:['worth the journey','atmosphere over food','order the turbot','book weeks ahead','special occasion'], activeTags:['worth the journey','atmosphere over food','order the turbot'] },
+  noble:    { name:'Noble Rot',       meta:'Wine bar · Soho · £££',             match:89, emoji:'🍷', tags:['natural wine list','atmosphere over food','neighbourhood gem','worth the journey','good for dates'], activeTags:['natural wine list','atmosphere over food'] },
+  lyles:    { name:"Lyle's",          meta:'British · Shoreditch · £££',        match:87, emoji:'🌿', tags:['neighbourhood gem','worth the journey','locals only','order the toast','good for solo dining'], activeTags:['neighbourhood gem','worth the journey'] },
+  brawn:    { name:'Brawn',           meta:'European · Bethnal Green · £££',    match:85, emoji:'🍖', tags:['natural wine list','neighbourhood gem','locals only','worth the journey'], activeTags:['natural wine list','neighbourhood gem'] },
+  daterra:  { name:'Da Terra',        meta:'Italian · Bethnal Green · £££££',   match:83, emoji:'⭐', tags:['special occasion','book weeks ahead','atmosphere over food','worth the journey'], activeTags:['special occasion','book weeks ahead'] },
+  rochelle: { name:'Rochelle Canteen',meta:'British · Shoreditch · £££',        match:81, emoji:'☀️', tags:['worth the journey','neighbourhood gem','good for groups','seasonal menu'], activeTags:['worth the journey','neighbourhood gem'] },
+  clove:    { name:'The Clove Club',  meta:'British · Shoreditch · £££££',      match:79, emoji:'🌟', tags:['special occasion','book weeks ahead','worth the journey','atmosphere over food'], activeTags:['special occasion','book weeks ahead'] },
+  somsaa:   { name:'Som Saa',         meta:'Thai · Spitalfields · ££',          match:76, emoji:'🌶️', tags:['order the larb','locals only','worth the journey','atmosphere over food','spicy'], activeTags:['order the larb','locals only','worth the journey'] },
+};
+
+const allRestaurants = Object.entries(restaurants).map(([id,r]) => ({id,...r}));
+let calibState={}, isSaved=false, savedList=[], currentDetailId=null, currentDetailFrom='home', reviewCount=42, activeFilter='all';
+
+function goTo(screen) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const next = document.getElementById('screen-'+screen);
+  next.classList.add('active');
+  if (screen==='explore') { renderExplore(); }
+  if (screen==='saved') { renderSaved(); }
+}
+
+function buildCalibration() {
+  const dots=document.getElementById('progress-dots'), cards=document.getElementById('calib-cards');
+  dots.innerHTML=''; cards.innerHTML='';
+  calibPlaces.forEach((p,i) => {
+    const dot=document.createElement('div'); dot.className='progress-dot'; dot.id='dot-'+i; dots.appendChild(dot);
+    const card=document.createElement('div'); card.className='calib-card'; card.style.animationDelay=(i*0.05)+'s';
+    card.innerHTML=`<div class="place-name">${p.name}</div><div class="place-meta">${p.meta}</div><div class="calib-options"><button class="calib-option" onclick="selectCalib(${i},'never',this)">Never been</button><button class="calib-option" onclick="selectCalib(${i},'love',this)">Loved it</button><button class="calib-option" onclick="selectCalib(${i},'mixed',this)">Mixed</button></div>`;
+    cards.appendChild(card);
+  });
+}
+
+function selectCalib(idx,val,btn) {
+  calibState[idx]=val;
+  btn.closest('.calib-options').querySelectorAll('.calib-option').forEach(b=>b.classList.remove('sel-love','sel-mixed','sel-never'));
+  btn.classList.add(val==='love'?'sel-love':val==='mixed'?'sel-mixed':'sel-never');
+  const dot=document.getElementById('dot-'+idx);
+  if(dot) dot.classList.add('done');
+}
+
+function finishCalibration() { showToast('Building your taste profile…'); setTimeout(()=>goTo('home'),900); }
+
+function openDetail(id, from) {
+  const r=restaurants[id]||restaurants['brat'];
+  currentDetailId=id; currentDetailFrom=from||'home';
+  isSaved=savedList.some(s=>s.id===id);
+  document.getElementById('save-btn').classList.toggle('saved',isSaved);
+  document.getElementById('detail-name').textContent=r.name;
+  document.getElementById('detail-meta').textContent=r.meta;
+  document.getElementById('detail-match').textContent=`✦ ${r.match}% match for you`;
+  document.getElementById('detail-tags').innerHTML=r.activeTags.map(t=>`<span class="tag active">${t}</span>`).join('');
+  document.getElementById('review-tags-area').innerHTML=r.tags.map(t=>`<span class="tag" onclick="this.classList.toggle('active')">${t}</span>`).join('');
+  const detailScreen=document.getElementById('screen-detail');
+  if(detailScreen) detailScreen.querySelectorAll('.binary-opt').forEach(b=>b.classList.remove('sel-yes','sel-no','sel-local'));
+  document.getElementById('detail-back-btn').onclick=()=>goTo(currentDetailFrom);
+  goTo('detail');
+}
+
+function selectBinary(btn,val,group) {
+  if(!btn) return;
+  const opts=btn.closest('.binary-opts');
+  if(opts) opts.querySelectorAll('.binary-opt').forEach(b=>b.classList.remove('sel-yes','sel-no','sel-local'));
+  btn.classList.add(val==='yes'?'sel-yes':val==='no'?'sel-no':'sel-local');
+}
+
+function toggleSave() {
+  isSaved=!isSaved;
+  document.getElementById('save-btn').classList.toggle('saved',isSaved);
+  const r=restaurants[currentDetailId];
+  if(isSaved){ if(r&&!savedList.some(s=>s.id===currentDetailId)) savedList.push({id:currentDetailId,...r}); showToast('Saved to your list'); }
+  else { savedList=savedList.filter(s=>s.id!==currentDetailId); showToast('Removed from saved'); }
+}
+
+function submitReview() {
+  reviewCount++;
+  document.getElementById('profile-subtitle').textContent=`Built from ${reviewCount} places reviewed`;
+  showToast('Review saved — taste profile updated ✦');
+  setTimeout(()=>goTo(currentDetailFrom),1000);
+}
+
+let activeFilterVal='all';
+function setFilter(el,filter) {
+  document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active'); activeFilterVal=filter;
+  const inp=document.getElementById('explore-input');
+  filterExplore(inp?inp.value:'');
+}
+
+function filterExplore(query) {
+  const q=(query||'').toLowerCase();
+  let results=allRestaurants.filter(r=>{
+    const mq=!q||r.name.toLowerCase().includes(q)||r.meta.toLowerCase().includes(q)||r.tags.some(t=>t.includes(q));
+    const mf=activeFilterVal==='all'||(activeFilterVal==='independent'&&!r.meta.includes('Chain'))||(activeFilterVal==='special'&&r.tags.includes('special occasion'))||(activeFilterVal==='neighbourhood'&&r.tags.includes('neighbourhood gem'))||(activeFilterVal==='wine'&&r.tags.includes('natural wine list'));
+    return mq&&mf;
+  });
+  const container=document.getElementById('explore-results');
+  if(!results.length){ container.innerHTML=`<div style="padding:40px 20px;text-align:center;color:var(--ink-faint);font-size:14px;">No restaurants found</div>`; return; }
+  container.innerHTML=results.map(r=>`<div class="restaurant-card" onclick="openDetail('${r.id}','explore')"><div class="card-top"><div><div class="card-name">${r.emoji} ${r.name}</div><div class="card-meta">${r.meta}</div></div><div class="match-pill">${r.match}%</div></div><div class="match-bar"><div class="match-fill" style="width:${r.match}%"></div></div><div style="margin-top:8px;">${r.activeTags.map(t=>`<span class="tag active">${t}</span>`).join('')}</div></div>`).join('');
+}
+
+function renderExplore() { filterExplore(document.getElementById('explore-input')?document.getElementById('explore-input').value:''); }
+
+function renderSaved() {
+  const container=document.getElementById('saved-list');
+  if(!savedList.length){ container.innerHTML=`<div style="padding:40px 20px;text-align:center;"><div style="font-size:32px;margin-bottom:12px;">♡</div><div style="font-size:15px;color:var(--ink-soft);margin-bottom:6px;">Nothing saved yet</div><div style="font-size:13px;color:var(--ink-faint);">Tap the heart on any restaurant to save it</div></div>`; return; }
+  container.innerHTML=savedList.map(r=>`<div class="saved-card" onclick="openDetail('${r.id}','saved')"><div class="saved-icon" style="background:var(--plum-pale);">${r.emoji}</div><div class="saved-info"><div class="saved-name">${r.name}</div><div class="saved-meta">${r.meta}</div></div><div class="match-pill">${r.match}%</div></div>`).join('');
+}
+
+const addSuggestions=[{name:'The Clove Club',meta:'British · Shoreditch'},{name:'Padella',meta:'Italian · Borough'},{name:'St. John',meta:'British · Clerkenwell'},{name:'Chez Bruce',meta:'French · Wandsworth'},{name:'Brat',meta:'Basque · Shoreditch'}];
+function handleAddSearch(val) {
+  const box=document.getElementById('add-suggestions');
+  if(!val||val.length<2){ box.style.display='none'; return; }
+  const matches=addSuggestions.filter(s=>s.name.toLowerCase().includes(val.toLowerCase()));
+  if(!matches.length){ box.style.display='none'; return; }
+  box.style.display='block';
+  box.innerHTML=matches.map(s=>`<div class="suggest-row" onclick="selectSuggestion('${s.name}','${s.meta}')"><div class="suggest-name">${s.name}</div><div class="suggest-meta">${s.meta}</div></div>`).join('');
+}
+function selectSuggestion(name,meta) {
+  document.getElementById('add-name').value=name;
+  const parts=meta.split(' · ');
+  if(parts[0]) document.getElementById('add-cuisine').value=parts[0];
+  if(parts[1]) document.getElementById('add-area').value=parts[1];
+  document.getElementById('add-suggestions').style.display='none';
+}
+function selectPrice(btn,val) { document.querySelectorAll('.price-opt').forEach(b=>b.classList.remove('selected')); btn.classList.add('selected'); }
+function submitNewRestaurant() {
+  const name=document.getElementById('add-name').value.trim();
+  if(!name){ showToast('Please enter a restaurant name'); return; }
+  showToast(`${name} added — thanks!`);
+  document.getElementById('add-name').value=''; document.getElementById('add-cuisine').value=''; document.getElementById('add-area').value='';
+  document.querySelectorAll('#add-tags-area .tag').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.price-opt').forEach(b=>b.classList.remove('selected'));
+  document.getElementById('add-suggestions').style.display='none';
+  reviewCount++; document.getElementById('profile-subtitle').textContent=`Built from ${reviewCount} places reviewed`;
+  setTimeout(()=>goTo('home'),1000);
+}
+
+function showHowItWorks() { document.getElementById('how-overlay').classList.add('show'); }
+function hideHowItWorks(e) { if(!e||e.target===document.getElementById('how-overlay')||!e.target) document.getElementById('how-overlay').classList.remove('show'); }
+
+let toastTimer;
+function showToast(msg) {
+  const t=document.getElementById('toast'); document.getElementById('toast-msg').textContent=msg;
+  t.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2400);
+}
+
+buildCalibration();
+</script>
+</body>
+</html>
